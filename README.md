@@ -1,0 +1,2 @@
+# Final Project Tiny Fishing Club
+This project is a small-scope, cozy, low-poly fishing game focused on collection and satisfying minigame-driven interactions rather than realism. Players passively fish and engage in two short skill-based minigames to catch randomized fish with varying rarity and weight. The primary goal is to build a playable beta within one month that includes the core gameplay loop, a collection system, and a minimal progression layer.
