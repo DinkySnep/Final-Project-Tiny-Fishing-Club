@@ -4,15 +4,32 @@ using UnityEngine;
 
 public class FishSystem : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField] private float minBiteTime = 1f;
+    [SerializeField] private float maxBiteTime = 4f;
+
+    private void OnEnable()
     {
-        
+        EventBus.OnCastStarted += HandleCast;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnDisable()
     {
-        
+        EventBus.OnCastStarted -= HandleCast;
+    }
+
+    private void HandleCast()
+    {
+        StartCoroutine(BiteRoutine());
+    }
+
+    private IEnumerator BiteRoutine()
+    {
+        float waitTime = Random.Range(minBiteTime, maxBiteTime);
+        Debug.Log("Waiting for bite: " + waitTime);
+
+        yield return new WaitForSeconds(waitTime);
+
+        Debug.Log("Fish Bit!");
+        EventBus.OnFishBite?.Invoke();
     }
 }
