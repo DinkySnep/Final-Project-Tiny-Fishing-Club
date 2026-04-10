@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Base Class for all fishing rods
+// This is responsable for handling the info needed when the player casts their line
 public class FishingRod : MonoBehaviour
 {
     [SerializeField] private float castCooldown = 1f;

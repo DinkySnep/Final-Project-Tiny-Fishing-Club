@@ -8,6 +8,6 @@ public class CastButton : MonoBehaviour
 
     public void OnCastPressed()
     {
-        fishingRod.Cast();
+        fishingRod.Cast();  // player cast a line
     }
 }

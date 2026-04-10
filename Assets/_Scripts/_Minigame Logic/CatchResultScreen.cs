@@ -11,6 +11,7 @@ public class CatchResultScreen : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
+            // temp code to allow the game to loop after the result screen
             Debug.Log("Continuing after succsesful catch...");
             gameObject.SetActive(false);
 
