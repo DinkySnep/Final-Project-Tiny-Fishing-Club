@@ -1,65 +1,47 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-/// <summary>
-/// Rhythm Minigame:
-/// Player must press input when the needle is inside a randomly generated zone.
-/// 3 hooks total. At least 1 success = win.
-/// </summary>
 public class RhythmMinigame : MonoBehaviour
 {
-    // private void Update()
-    // {
-    //     if (!gameObject.activeSelf) return;
-
-    //     if (Input.GetKeyDown(KeyCode.Space))
-    //     {
-    //         // testing minigame, spacebar is a success
-    //         Debug.Log("Hook Success");
-    //         EventBus.OnHookSuccess?.Invoke();
-    //     }
-
-    //     if (Input.GetKeyDown(KeyCode.F))
-    //     {
-    //         // testing minigame, 'F' key is a fail
-    //         Debug.Log("Hook Fail");
-    //         EventBus.OnHookFail?.Invoke();
-    //     }
-    // }
-
     [Header("References")]
-    [SerializeField] private RectTransform needle;          // rotating UI needle
-    [SerializeField] private RectTransform successZone;     // visual zone indicator
-    [SerializeField] private Transform[] hookIcons;         // 3 hook UI icons
+    [SerializeField] private RectTransform needle;
+    [SerializeField] private Image successZone;
+    [SerializeField] private Image[] hookIcons; // CHANGED (was Transform[])
     [SerializeField] private TMPro.TextMeshProUGUI feedbackText;
 
     [Header("Rotation")]
-    [SerializeField] private float needleSpeed = 120f;     // degrees per second
+    [SerializeField] private float needleSpeed = 120f;
     [SerializeField] private float minAngle = 0f;
-    [SerializeField] private float maxAngle = 180f;        // semicircle range
+    [SerializeField] private float maxAngle = 180f;
 
     [Header("Zone Settings")]
-    [SerializeField] private float zoneSize = 20f;         // degrees width
+    [SerializeField] private float zoneSize = 20f;
 
     [Header("Gameplay")]
     [SerializeField] private int maxHooks = 3;
 
-    // internal state
+    [Header("Feedback Colors")] // ADDED
+    [SerializeField] private Color successColor = Color.green;
+    [SerializeField] private Color failColor = Color.red;
+    [SerializeField] private Color defaultColor = Color.white;
+
+    [Header("Timing")] // ADDED
+    [SerializeField] private float endDelay = 0.75f;
+
     private float currentAngle;
     private float direction = 1f;
 
     private float zoneStart;
     private float zoneEnd;
+    private float zoneCenter;
 
     private int hooksUsed = 0;
     private int successfulHits = 0;
 
     private bool isActive = false;
 
-    // ---------------------------
-    // UNITY LOOP
-    // ---------------------------
     private void OnEnable()
     {
         ResetMinigame();
@@ -75,9 +57,6 @@ public class RhythmMinigame : MonoBehaviour
         HandleInput();
     }
 
-    // ---------------------------
-    // NEEDLE MOVEMENT (PING PONG)
-    // ---------------------------
     private void HandleNeedleMovement()
     {
         currentAngle += direction * needleSpeed * Time.deltaTime;
@@ -93,12 +72,9 @@ public class RhythmMinigame : MonoBehaviour
             direction = 1f;
         }
 
-        needle.localRotation = Quaternion.Euler(0, 0, currentAngle);
+        needle.localRotation = Quaternion.Euler(0, 0, -currentAngle + 90f);
     }
 
-    // ---------------------------
-    // INPUT HANDLING
-    // ---------------------------
     private void HandleInput()
     {
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
@@ -107,99 +83,107 @@ public class RhythmMinigame : MonoBehaviour
         }
     }
 
-    // ---------------------------
-    // HIT EVALUATION
-    // ---------------------------
     private void EvaluateHit()
     {
-        // Check if needle is inside success zone
-        bool success = currentAngle >= zoneStart && currentAngle <= zoneEnd;
+        float offset = currentAngle - zoneCenter;
+        float absOffset = Mathf.Abs(offset);
+
+        bool success = absOffset <= (zoneSize / 2f);
+
+        float normalized = absOffset / (zoneSize / 2f);
+        float ms = normalized * 100f;
 
         if (success)
         {
-            OnSuccessfulHit();
+            OnSuccessfulHit(ms);
         }
         else
         {
-            OnFailedHit();
+            OnFailedHit(ms);
         }
     }
 
-    // ---------------------------
-    // SUCCESS LOGIC
-    // ---------------------------
-    private void OnSuccessfulHit()
+    private void OnSuccessfulHit(float ms)
     {
         successfulHits++;
+        hooksUsed++;
 
-        // Light up a hook (visual feedback)
-        if (successfulHits <= hookIcons.Length)
-            hookIcons[successfulHits - 1].gameObject.SetActive(true);
+        int index = hooksUsed - 1; // CHANGED
+        if (index >= 0 && index < hookIcons.Length)
+            hookIcons[index].color = successColor;
 
-        ShowFeedback("GOOD!", Color.green);
+        ShowFeedback($"HIT\n{ms:0} ms", Color.green);
 
-        // Trigger EVENT:
-        // Tells the rest of the game (MinigameManager) to move to reel phase
-        EventBus.OnHookSuccess?.Invoke();
-
-        EndMinigame();
+        CheckEndCondition();
     }
 
-    // ---------------------------
-    // FAILURE LOGIC
-    // ---------------------------
-    private void OnFailedHit()
+    private void OnFailedHit(float ms)
     {
         hooksUsed++;
 
-        // Remove a hook visually
         int index = hooksUsed - 1;
         if (index >= 0 && index < hookIcons.Length)
-            hookIcons[index].gameObject.SetActive(false);
+            hookIcons[index].color = failColor;
 
-        ShowFeedback("MISS", Color.red);
+        ShowFeedback($"MISS\n{ms:0} ms", Color.red);
 
-        // If player runs out of hooks → fail minigame
+        CheckEndCondition();
+    }
+
+    private void CheckEndCondition()
+    {
         if (hooksUsed >= maxHooks)
         {
-            EventBus.OnHookFail?.Invoke();
-            EndMinigame();
+            ResolveMinigame();
             return;
         }
 
-        // Otherwise regenerate zone for next attempt
         GenerateZone();
     }
 
-    // ---------------------------
-    // ZONE GENERATION
-    // ---------------------------
+    private void ResolveMinigame()
+    {
+        isActive = false;
+        StartCoroutine(ResolveRoutine()); // CHANGED
+    }
+
+    private IEnumerator ResolveRoutine() // ADDED
+    {
+        if (successfulHits == 1)
+            ShowFeedback("OK", Color.yellow);
+        else if (successfulHits == 2)
+            ShowFeedback("GOOD", Color.green);
+        else if (successfulHits == 3)
+            ShowFeedback("PERFECT", Color.cyan);
+        else
+            ShowFeedback("MISS", Color.red);
+
+        yield return new WaitForSeconds(endDelay);
+
+        if (successfulHits == 0)
+            EventBus.OnHookFail?.Invoke();
+        else
+            EventBus.OnHookSuccess?.Invoke();
+    }
+
     private void GenerateZone()
     {
         float start = Random.Range(minAngle, maxAngle - zoneSize);
 
         zoneStart = start;
         zoneEnd = start + zoneSize;
+        zoneCenter = (zoneStart + zoneEnd) / 2f;
 
-        // Position UI zone (rotation-based)
-        successZone.localRotation = Quaternion.Euler(0, 0, zoneStart);
-        successZone.sizeDelta = new Vector2(zoneSize * 2f, successZone.sizeDelta.y);
+        successZone.rectTransform.localRotation = Quaternion.Euler(0, 0, -zoneStart);
+        successZone.fillAmount = zoneSize / 360f;
     }
 
-    // ---------------------------
-    // FEEDBACK SYSTEM
-    // ---------------------------
     private void ShowFeedback(string text, Color color)
     {
         feedbackText.text = text;
         feedbackText.color = color;
-
-        // Could later be expanded into fade-out animation
     }
 
-    // ---------------------------
-    // RESET
-    // ---------------------------
     private void ResetMinigame()
     {
         hooksUsed = 0;
@@ -207,29 +191,12 @@ public class RhythmMinigame : MonoBehaviour
         currentAngle = 0f;
         direction = 1f;
 
-        // Reset hooks visually
         foreach (var h in hookIcons)
+        {
+            h.color = defaultColor; // CHANGED
             h.gameObject.SetActive(true);
+        }
 
         feedbackText.text = "";
-    }
-
-    // ---------------------------
-    // END MINIGAME
-    // ---------------------------
-    private void EndMinigame()
-    {
-        isActive = false;
-
-        /*
-         EVENT PURPOSE:
-         These events are already used by MinigameManager.
-
-         OnHookSuccess → transitions to Reel Minigame
-         OnHookFail    → returns to Idle state
-
-         This script does NOT control game flow.
-         It only reports results.
-        */
     }
 }
