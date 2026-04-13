@@ -8,6 +8,13 @@ public class MinigameManager : MonoBehaviour
     [SerializeField] private GameObject reelUI;
     [SerializeField] private GameObject resultUI;
 
+    private FishSystem fishSystem; // reference to fish system
+
+    private void Awake()
+    {
+        fishSystem = FindObjectOfType<FishSystem>(); // get fish system in scene
+    }
+
     private void OnEnable()
     {
         EventBus.OnFishBite += StartHookMinigame;
@@ -48,7 +55,14 @@ public class MinigameManager : MonoBehaviour
         reelUI.SetActive(false);
         rhythmUI.SetActive(false);
 
-        // show the fish caught
+        // resolve the fish that was caught
+        FishInstance fish = fishSystem.ResolveCatch();
+
+        // add fish to player inventory
+        PlayerData.Instance.AddFish(fish);
+
+        // send fish to result screen
+        resultUI.GetComponent<CatchResultScreen>().ShowResult(fish);
         resultUI.SetActive(true);
         GameManager.Instance.SetState(GameState.CatchResult);
 
