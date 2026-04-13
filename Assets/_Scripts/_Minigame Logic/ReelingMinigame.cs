@@ -40,10 +40,19 @@ public class ReelingMinigame : MonoBehaviour
     [SerializeField] private Color activeColor = Color.green;
     [SerializeField] private Color idleColor = Color.white;
 
+    // delay before the minigame actually starts
+    [Header("Start Delay")]
+    [SerializeField] private float startDelay = 0.33f; // pause so player can read the screen
+
     // internal mingame states
     private float playerY;
     private float fishY;
     private float fishVelocity;
+
+
+    private float playerVelocity;       // smooth velocity for player movement
+
+    private float targetFishVelocity;   // target velocity for fish (smoothing)
 
     private float progress;
 
@@ -52,11 +61,13 @@ public class ReelingMinigame : MonoBehaviour
 
     private bool isActive = false;
 
+    private bool isPausedAtStart = true;    // gameplay puase for the begning
+
     private void OnEnable()
     {
         Initialize();
         StartCoroutine(FishMovementRoutine());
-        isActive = true;
+        StartCoroutine(StartDelayRoutine()); // start delay before gameplay begins
     }
 
     private void Update()
@@ -79,23 +90,39 @@ public class ReelingMinigame : MonoBehaviour
         playerY = height * 0f;
         fishY = height * 0f;
 
+        playerVelocity = 0f; // reset velocity
+
         progress = startProgress;
         UpdateProgressUI();
+    }
+
+    // handle the pause before gameplay starts
+    private IEnumerator StartDelayRoutine()
+    {
+        isPausedAtStart = true;
+        isActive = false; // prevent updating the game when paused 
+
+        yield return new WaitForSeconds(startDelay);
+
+        isPausedAtStart = false;
+        isActive = true; // start gamen
     }
 
     // logic for when the player interacts with the game
     private void HandlePlayerMovement()
     {
+        if (isPausedAtStart) return; // no movement during start delay
+
         bool inputHeld = Input.GetKey(KeyCode.Space) || Input.GetMouseButton(0);
 
-        if (inputHeld)
-        {
-            playerY += riseSpeed * Time.deltaTime;
-        }
-        else
-        {
-            playerY -= fallSpeed * Time.deltaTime;
-        }
+        // target velocity for the player bar
+        float targetVelocity = inputHeld ? riseSpeed : -fallSpeed;
+
+        // smoothing toward target
+        playerVelocity = Mathf.Lerp(playerVelocity, targetVelocity, Time.deltaTime * 8f);
+
+        // move the players bar
+        playerY += playerVelocity * Time.deltaTime;
 
         playerY = Mathf.Clamp(playerY, minY, maxY);
     }
@@ -105,25 +132,43 @@ public class ReelingMinigame : MonoBehaviour
     {
         while (true)
         {
-            // pick a random vertical velocity
-            fishVelocity = Random.Range(-fishMoveSpeed, fishMoveSpeed);
+            // vary speed slightly for some randomness
+            float speedMultiplier = Random.Range(0.8f, 1.2f);
 
-            yield return new WaitForSeconds(fishChangeInterval);
+            // set a target velocity like the player movement
+            targetFishVelocity = Random.Range(-fishMoveSpeed, fishMoveSpeed) * speedMultiplier;
+
+            yield return new WaitForSeconds(fishChangeInterval * 0.75f);
         }
     }
+
     private void UpdateFish()
     {
+        if (isPausedAtStart) return; // pause fish during start delay
+
+        // smooth toward target velocity like the player but faster
+        fishVelocity = Mathf.Lerp(fishVelocity, targetFishVelocity, Time.deltaTime * 12f);
+
         fishY += fishVelocity * Time.deltaTime;
 
-        // clamp fish inside play bounds
-        if (fishY <= minY || fishY >= maxY)
+        // prevent fish from hitting and getting stuck to a bound
+        // if the fish hits or goes below the lower bound 
+        if (fishY <= minY)
         {
-            fishVelocity *= -1f;
+            fishY = minY;
+            // flip fish direction
+            targetFishVelocity = Mathf.Abs(targetFishVelocity);
+            fishVelocity = Mathf.Abs(fishVelocity);
         }
-
-        fishY = Mathf.Clamp(fishY, minY, maxY);
+        // if the fish hits or goes above the upper bound 
+        else if (fishY >= maxY)
+        {
+            fishY = maxY;
+            // flip fish direction
+            targetFishVelocity = -Mathf.Abs(targetFishVelocity);
+            fishVelocity = -Mathf.Abs(fishVelocity);
+        }
     }
-
 
     private void UpdatePositions()
     {
@@ -136,6 +181,8 @@ public class ReelingMinigame : MonoBehaviour
     // evaluate the players interaction
     private void EvaluateCatch()
     {
+        if (isPausedAtStart) return; // no progress change during pause
+
         float playerTop = playerY + (playerBar.rect.height / 2f);
         float playerBottom = playerY - (playerBar.rect.height / 2f);
 

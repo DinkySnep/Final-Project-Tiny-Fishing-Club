@@ -1081,13 +1081,14 @@ MonoBehaviour:
   playArea: {fileID: 192006612}
   riseSpeed: 200
   fallSpeed: 150
-  fishMoveSpeed: 100
+  fishMoveSpeed: 200
   fishChangeInterval: 1.5
   progressGainRate: 0.2
   progressLossRate: 0.1
   startProgress: 0.33
   activeColor: {r: 0, g: 1, b: 0, a: 1}
   idleColor: {r: 1, g: 1, b: 1, a: 1}
+  startDelay: 0.33
 --- !u!114 &750433930
 MonoBehaviour:
   m_ObjectHideFlags: 0
