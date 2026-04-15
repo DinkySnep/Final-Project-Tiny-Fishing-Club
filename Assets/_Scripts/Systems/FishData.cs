@@ -2,6 +2,7 @@ using UnityEngine;
 
 public enum FishRarity
 {
+    Trash,
     Common,
     Uncommon,
     Rare,
