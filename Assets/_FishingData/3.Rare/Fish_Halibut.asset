@@ -18,4 +18,4 @@ MonoBehaviour:
   fishPrefab: {fileID: 7446755423692450216, guid: 9196e9539af5cc34ea66629ec53ffe4c, type: 3}
   fishColor: {r: 0.24377, g: 0.6226415, b: 0.4199661, a: 0}
   baseSellPrice: 9
-  rarity: 2
+  rarity: 3

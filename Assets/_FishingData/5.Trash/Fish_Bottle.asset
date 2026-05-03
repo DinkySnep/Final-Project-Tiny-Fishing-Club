@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4d0e2bfb30ae5c40b31427f3fe09e20, type: 3}
   m_Name: Fish_Bottle
   m_EditorClassIdentifier: 
-  fishName: Boot
+  fishName: Bottle
   minWeight: 2
   maxWeight: 2
   fishPrefab: {fileID: 5389948490275319334, guid: 2a43714cdac9d174b859072af6678631, type: 3}
