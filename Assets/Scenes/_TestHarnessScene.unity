@@ -2194,6 +2194,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Fishing Rod
       objectReference: {fileID: 0}
+    - target: {fileID: 3886265590235273430, guid: b818d3c1a68b1d54da97b236f6f8978c, type: 3}
+      propertyPath: audioSource
+      value: 
+      objectReference: {fileID: 8770256289109854895, guid: db8cc2836d07af24bbe078bb790eb314, type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b818d3c1a68b1d54da97b236f6f8978c, type: 3}
 --- !u!4 &629515692 stripped
@@ -5165,6 +5169,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fishingRod: {fileID: 1985770298}
+  castSound: {fileID: 8300000, guid: 2f735b994df44034d961cc7de134353d, type: 3}
 --- !u!1 &1370177431
 GameObject:
   m_ObjectHideFlags: 0
